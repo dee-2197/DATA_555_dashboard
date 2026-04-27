@@ -9,6 +9,8 @@ output:
     theme: flatly
     self_contained: true
     mathjax: null
+    navbar:
+      - { title: "GitHub Repository", href: "https://github.com/dee-2197/DATA_555_dashboard", align: right, icon: "fa-github" }
 ---
 
 <style>
@@ -127,13 +129,13 @@ make_bar_fig <- function(chart_data, group_var, group_levels,
       title  = list(text = paste0("<b>", plot_title, "</b>"),
                     font = list(size = 13, family = "Arial"), x = 0.5),
       xaxis  = list(title = list(text = x_title, font = list(size = 12)),
-                    tickfont = list(size = 10), automargin = TRUE,
+                    tickfont = list(size = 12), automargin = TRUE,
                     categoryorder = "array", categoryarray = group_levels,
                     tickangle = 0),
       yaxis  = list(type = "log",
                     title = list(text = "Households (Log Scale)",
-                                 font = list(size = 11)),
-                    tickfont = list(size = 10),
+                                 font = list(size = 12)),
+                    tickfont = list(size = 11),
                     gridcolor = "rgba(200,200,200,0.4)",
                     automargin = TRUE,
                     tickvals = c(1,2,5,10,20,50,100,200,500,1000),
@@ -294,6 +296,8 @@ Row {data-height=70}
 
 <p style="text-align:center; font-size:13px; color:#444; padding: 6px 16px; line-height:1.55; margin: 0;">
 <b>Why this matters:</b> Diarrheal disease remains a leading cause of child morbidity in rural Ethiopia. Identifying modifiable WASH risk factors &mdash; particularly handwashing with soap &mdash; provides actionable targets for community health interventions and policy.
+&nbsp;|&nbsp;
+<a href="https://github.com/dee-2197/DATA_555_dashboard" target="_blank" style="color:#1B4F8A; font-weight:600;">📎 Source Code on GitHub</a>
 </p>
 
 About the Data {data-icon="fa-info-circle"}
@@ -319,3 +323,7 @@ Row
 ---
 
 **Why this matters:** Diarrheal disease remains a leading cause of child morbidity in rural Ethiopia. Identifying modifiable WASH risk factors — particularly handwashing with soap — provides actionable targets for community health interventions and policy makers working to reduce waterborne illness burden in the region.
+
+---
+
+**Source Code:** The complete source code for this dashboard is available at [github.com/dee-2197/DATA_555_dashboard](https://github.com/dee-2197/DATA_555_dashboard).
