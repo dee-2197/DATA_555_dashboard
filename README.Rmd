@@ -25,8 +25,8 @@ Hand washing does reduce prevalence of diarrhea
 
 ## Source code
 
-file named index.Rmd in my repository contains the source code
+File named index.Rmd in my repository contains the source code
 
 ## Rationale
 
-Why this matters: Diarrheal disease remains a leading cause of child morbidity in rural Ethiopia. Identifying modifiable WASH risk factors — particularly hand washing with soap — provides actionable targets for community health interventions and policy.  
+Why this matters: Diarrheal disease remains a leading cause of child morbidity in rural Ethiopia. Identifying modifiable WASH risk factors, particularly hand washing with soap, provides actionable targets for community health interventions and policy.  
