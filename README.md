@@ -12,15 +12,26 @@ Prevalence of Diarrheal Diseases
 ## Methodology
 
 A cross-sectional study with 977 participant The Dashboard gives
-discriptive statistics of exposure (handwashing facility), outcome
+descriptive statistics of exposure (hand washing facility), outcome
 (diarrheal prevalence), and covariates (sex, age, and educational status
-of respondant)
+of respondent)
 
 ## Result
 
 Presence of a handwashing facility had 50% lower odds of diarrheal
-illness compared to those who did not have any handwashing facility
+illness compared to those who did not have any hand washing facility
 
 ## Conclusion
 
-handwashing does reduce prevalence of diarrhea
+Hand washing does reduce prevalence of diarrhea
+
+## Source code
+
+file named index.Rmd in my repository contains the source code
+
+## Rationale
+
+Why this matters: Diarrheal disease remains a leading cause of child
+morbidity in rural Ethiopia. Identifying modifiable WASH risk factors —
+particularly hand washing with soap — provides actionable targets for
+community health interventions and policy.
