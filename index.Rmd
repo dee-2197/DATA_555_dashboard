@@ -1,0 +1,321 @@
+---
+title: "WASH & Waterborne Illness — Hararghe, Ethiopia"
+author: "Deepanshu Goel"
+date: "`r Sys.Date()`"
+output:
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: scroll
+    theme: flatly
+    self_contained: true
+    mathjax: null
+---
+
+<style>
+/* ── Make takeaways visible & responsive ────────────────────────────────── */
+.takeaway-box {
+  font-size: 13px;
+  line-height: 1.65;
+  color: #2C3E50;
+  background: #f0f5fb;
+  border-left: 5px solid #1B4F8A;
+  padding: 12px 16px;
+  border-radius: 0 6px 6px 0;
+  margin: 0;
+}
+.takeaway-box b { color: #1B4F8A; }
+
+/* Allow content to overflow into visible space */
+.section.level3 { overflow: visible !important; padding-bottom: 6px; }
+.chart-wrapper { overflow: visible !important; }
+.chart-shim    { overflow: visible !important; }
+
+/* ── Mobile responsive ──────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .takeaway-box { font-size: 12px; padding: 10px 12px; }
+  .js-plotly-plot, .plotly { width: 100% !important; }
+  .col-sm-6 { width: 100% !important; }
+  .row { display: block !important; }
+}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+library(flexdashboard)
+library(tidyverse)
+library(readxl)
+library(plotly)
+
+ethiopia <- read_excel("Ethopia_WASH.xlsx")
+names(ethiopia)[96] <- "diarrhea_cases"
+names(ethiopia)[78] <- "handwashing_practice"
+names(ethiopia)[18] <- "education_status"
+names(ethiopia)[14] <- "sex"
+names(ethiopia)[15] <- "age"
+
+ethiopia <- ethiopia |>
+  mutate(
+    diarrhea_cases       = trimws(diarrhea_cases),
+    handwashing_practice = trimws(handwashing_practice),
+    education_status     = trimws(education_status),
+    sex                  = trimws(sex),
+    age                  = as.numeric(age),
+    hw_label = case_when(
+      handwashing_practice == "No"                           ~ "No Facility",
+      handwashing_practice == "Yes, with water only"         ~ "Water Only",
+      handwashing_practice == "Yes, with soap/ash and water" ~ "Soap & Water"
+    ),
+    hw_label = factor(hw_label, levels = c("No Facility","Water Only","Soap & Water")),
+    education_label = case_when(
+      str_detect(education_status, "Illiterate")     ~ "Illiterate",
+      str_detect(education_status, "read and write") ~ "Read & Write",
+      str_detect(education_status, "Some Primary")   ~ "Some Primary",
+      str_detect(education_status, "High school")    ~ "High School",
+      str_detect(education_status, "College")        ~ "College"
+    ),
+    education_label = factor(education_label,
+      levels = c("Illiterate","Read & Write","Some Primary","High School","College"))
+  )
+
+C_NO  <- "#E87722"
+C_YES <- "#1B4F8A"
+
+make_chart_data <- function(data, group_var, group_levels) {
+  ct <- data |>
+    filter(!is.na(.data[[group_var]]), !is.na(diarrhea_cases)) |>
+    group_by(across(all_of(c(group_var, "diarrhea_cases")))) |>
+    summarise(n = n(), .groups = "drop") |>
+    group_by(across(all_of(group_var))) |>
+    mutate(total = sum(n), proportion = round(n / total * 100, 1)) |>
+    ungroup()
+
+  full <- expand_grid(
+    !!group_var := factor(group_levels, levels = group_levels),
+    diarrhea_cases = c("No", "Yes")
+  )
+  full |>
+    left_join(ct, by = c(group_var, "diarrhea_cases")) |>
+    replace_na(list(n = 0, total = 0, proportion = 0))
+}
+
+make_bar_fig <- function(chart_data, group_var, group_levels,
+                         x_title, plot_title) {
+  fig <- plot_ly()
+  for (outcome in c("No", "Yes")) {
+    d <- chart_data |> filter(diarrhea_cases == outcome)
+    fig <- fig |>
+      add_bars(
+        x = d[[group_var]], y = ~n, data = d,
+        name = paste("Diarrhea:", outcome),
+        marker = list(color = if (outcome == "No") C_NO else C_YES,
+                      opacity = 0.9,
+                      line = list(color = "white", width = 1)),
+        text = ~paste0(
+          "<b>", d[[group_var]], "</b><br>",
+          "Diarrhea: <b>", outcome, "</b><br>",
+          "Count: <b>", n, "</b><br>",
+          "Group total: ", total, "<br>",
+          "Proportion: ", proportion, "%"
+        ),
+        textposition = "none",
+        hoverinfo    = "text"
+      )
+  }
+
+  fig |>
+    layout(
+      title  = list(text = paste0("<b>", plot_title, "</b>"),
+                    font = list(size = 13, family = "Arial"), x = 0.5),
+      xaxis  = list(title = list(text = x_title, font = list(size = 12)),
+                    tickfont = list(size = 10), automargin = TRUE,
+                    categoryorder = "array", categoryarray = group_levels,
+                    tickangle = 0),
+      yaxis  = list(type = "log",
+                    title = list(text = "Households (Log Scale)",
+                                 font = list(size = 11)),
+                    tickfont = list(size = 10),
+                    gridcolor = "rgba(200,200,200,0.4)",
+                    automargin = TRUE,
+                    tickvals = c(1,2,5,10,20,50,100,200,500,1000),
+                    ticktext = c("1","2","5","10","20","50","100","200","500","1000")),
+      barmode = "group", bargap = 0.25, bargroupgap = 0.08,
+      legend  = list(title = list(text = "<b>Diarrhea</b>"),
+                     orientation = "h", x = 0.5, xanchor = "center", y = -0.30),
+      plot_bgcolor  = "white", paper_bgcolor = "white",
+      font   = list(family = "Arial"),
+      margin = list(t = 60, b = 110, l = 55, r = 20),
+      autosize = TRUE,
+      updatemenus = list(list(
+        type = "buttons", direction = "right",
+        x = 0.5, xanchor = "center", y = 1.13, yanchor = "top",
+        showactive = TRUE,
+        buttons = list(
+          list(label = "Both",         method = "update", args = list(list(visible = list(TRUE, TRUE)))),
+          list(label = "Diarrhea: No", method = "update", args = list(list(visible = list(TRUE, FALSE)))),
+          list(label = "Diarrhea: Yes",method = "update", args = list(list(visible = list(FALSE, TRUE))))
+        )
+      )),
+      annotations = list(
+        list(text = "Filter:", x = 0.22, xref = "paper",
+             y = 1.135, yref = "paper", showarrow = FALSE,
+             font = list(size = 11))
+      )
+    ) |>
+    config(displayModeBar = TRUE,
+           modeBarButtonsToRemove = c("zoom2d","pan2d","select2d","lasso2d",
+                                      "zoomIn2d","zoomOut2d","autoScale2d"),
+           responsive = TRUE)
+}
+```
+
+Dashboard {data-icon="fa-chart-bar"}
+=====================================================================
+
+Row {data-height=420}
+-------------------------------------
+
+### Figure 1: Handwashing Practice vs. Diarrhea Cases
+
+```{r fig1}
+hw_data <- make_chart_data(ethiopia, "hw_label", levels(ethiopia$hw_label))
+make_bar_fig(hw_data, "hw_label", levels(ethiopia$hw_label),
+             "Handwashing Practice",
+             "Does Handwashing Practice Affect Diarrhea Risk?")
+```
+
+### Figure 2: Sex vs. Diarrhea Cases
+
+```{r fig2}
+sex_data <- make_chart_data(ethiopia, "sex", c("Female", "Male"))
+make_bar_fig(sex_data, "sex", c("Female", "Male"),
+             "Sex",
+             "Does Sex Affect Diarrhea Risk?")
+```
+
+Row {data-height=110}
+-------------------------------------
+
+###
+
+<div class="takeaway-box">
+<b>Figure 1 &mdash; Key Takeaways:</b> Households with <b>no handwashing facility</b> had the highest diarrhea prevalence (17 cases, 3.0%), compared to water-only (6 cases, 2.8%). <b>Zero diarrhea cases</b> were observed in soap &amp; water households &mdash; the strongest protective WASH behavior. Handwashing with soap appears to be a <b>key modifiable risk factor</b> for waterborne illness.
+</div>
+
+###
+
+<div class="takeaway-box">
+<b>Figure 2 &mdash; Key Takeaways:</b> The sample was predominantly <b>female</b> (n=856, 87.6%), reflecting the household survey design. Diarrhea proportions were similar across sexes: <b>2.5% (female) vs. 1.7% (male)</b> &mdash; sex alone is not a strong predictor of diarrhea risk. The log scale is especially useful given the large group size imbalance (856 vs. 121).
+</div>
+
+Row {data-height=420}
+-------------------------------------
+
+### Figure 3: Education Status vs. Diarrhea Cases
+
+```{r fig3}
+edu_data <- make_chart_data(ethiopia, "education_label", levels(ethiopia$education_label))
+make_bar_fig(edu_data, "education_label", levels(ethiopia$education_label),
+             "Educational Status",
+             "Does Education Status Affect Diarrhea Risk?")
+```
+
+### Figure 4: Age Distribution by Diarrhea Status (years)
+
+```{r fig4}
+box_colors <- c("Yes" = "#1B4F8A", "No" = "#E87722")
+
+fig4 <- plot_ly()
+for (outcome in c("Yes", "No")) {
+  d <- ethiopia |> filter(diarrhea_cases == outcome, !is.na(age))
+  five_num <- quantile(d$age, probs = c(0, 0.25, 0.5, 0.75, 1), na.rm = TRUE)
+  fig4 <- fig4 |>
+    add_boxplot(
+      y = ~age, data = d,
+      name      = paste("Diarrhea:", outcome),
+      x         = outcome,
+      marker    = list(color = box_colors[[outcome]]),
+      line      = list(color = box_colors[[outcome]]),
+      fillcolor = box_colors[[outcome]],
+      opacity   = 0.80,
+      text = paste0(
+        "<b>Diarrhea: ", outcome, "</b><br>",
+        "Min: <b>",    five_num[1], " yrs</b><br>",
+        "Q1: <b>",     five_num[2], " yrs</b><br>",
+        "Median: <b>", five_num[3], " yrs</b><br>",
+        "Q3: <b>",     five_num[4], " yrs</b><br>",
+        "Max: <b>",    five_num[5], " yrs</b>"
+      ),
+      hoverinfo = "text"
+    )
+}
+
+fig4 |>
+  layout(
+    title  = list(text = "<b>Age Distribution by Diarrhea Status</b>",
+                  font = list(size = 13, family = "Arial"), x = 0.5),
+    xaxis  = list(title = list(text = "Diarrhea Status", font = list(size = 12)),
+                  tickfont = list(size = 11), automargin = TRUE,
+                  categoryorder = "array", categoryarray = c("Yes", "No")),
+    yaxis  = list(title = list(text = "Age (years)", font = list(size = 11)),
+                  tickfont = list(size = 10),
+                  gridcolor = "rgba(200,200,200,0.4)",
+                  automargin = TRUE, zeroline = FALSE),
+    showlegend    = FALSE,
+    plot_bgcolor  = "white", paper_bgcolor = "white",
+    font   = list(family = "Arial"),
+    margin = list(t = 50, b = 60, l = 55, r = 20),
+    autosize = TRUE
+  ) |>
+  config(displayModeBar = TRUE,
+         modeBarButtonsToRemove = c("zoom2d","pan2d","select2d","lasso2d",
+                                    "zoomIn2d","zoomOut2d","autoScale2d"),
+         responsive = TRUE)
+```
+
+Row {data-height=110}
+-------------------------------------
+
+###
+
+<div class="takeaway-box">
+<b>Figure 3 &mdash; Key Takeaways:</b> Diarrhea cases were concentrated in the <b>illiterate</b> (n=19, 2.5%) and <b>some primary</b> (n=3, 5.0%) groups. <b>Zero cases</b> in high school/preparatory and college/university groups suggest a strong protective educational gradient. Education may be an important <b>effect modifier</b> of the WASH&ndash;diarrhea relationship.
+</div>
+
+###
+
+<div class="takeaway-box">
+<b>Figure 4 &mdash; Key Takeaways:</b> Median age was <b>30 years</b> (IQR: 25&ndash;39.5) in diarrhea cases vs. <b>35 years</b> (IQR: 28&ndash;40) in non-cases. The overlapping IQRs suggest <b>age alone is not a strong predictor</b> of diarrhea risk. Hover over each box to explore the full 5-number summary.
+</div>
+
+Row {data-height=70}
+-------------------------------------
+
+###
+
+<p style="text-align:center; font-size:13px; color:#444; padding: 6px 16px; line-height:1.55; margin: 0;">
+<b>Why this matters:</b> Diarrheal disease remains a leading cause of child morbidity in rural Ethiopia. Identifying modifiable WASH risk factors &mdash; particularly handwashing with soap &mdash; provides actionable targets for community health interventions and policy.
+</p>
+
+About the Data {data-icon="fa-info-circle"}
+=====================================================================
+
+Row
+-------------------------------------
+
+### Dataset Description
+
+**Data Source:** Household survey dataset from Hararghe, Ethiopia (confidential — not publicly available).
+
+**Sample Size:** 977 households.
+
+**Data Collection:** Data were collected via structured household interviews using a cross-sectional survey design targeting household-level WASH practices and health outcomes in the Hararghe region of Ethiopia.
+
+**Study Population:** Household respondents (87.6% female) aged 8–78 years residing in Hararghe, Ethiopia; 76.5% of respondents were illiterate.
+
+**Outcome:** Diarrhea cases reported in the past month (Yes: 23 households, 2.4%; No: 954 households, 97.6%).
+
+**Key Exposures:** Handwashing practice (no facility / water only / soap & water), sex, age, and educational status.
+
+---
+
+**Why this matters:** Diarrheal disease remains a leading cause of child morbidity in rural Ethiopia. Identifying modifiable WASH risk factors — particularly handwashing with soap — provides actionable targets for community health interventions and policy makers working to reduce waterborne illness burden in the region.
