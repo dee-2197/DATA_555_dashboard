@@ -35,3 +35,8 @@ Why this matters: Diarrheal disease remains a leading cause of child
 morbidity in rural Ethiopia. Identifying modifiable WASH risk factors,
 particularly hand washing with soap, provides actionable targets for
 community health interventions and policy.
+
+## Dashboard URL
+
+🔗 **[View Live
+Dashboard](https://dee-2197.github.io/DATA_555_dashboard/)**
